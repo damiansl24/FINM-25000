@@ -1,0 +1,24 @@
+# virtual env
+.venv/
+venv/
+finmv/
+
+# Python cache
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter Notebook
+
+.ipynb_checkpoints/
+
+# Environment / secrets
+
+.env
+*.env
+
+# OS / system files
+
+.DS_Store
+Thumbs.db
