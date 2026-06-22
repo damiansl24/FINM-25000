@@ -276,3 +276,162 @@ Mutual funds.
 -----
 ## Exchange and Trading System
 
+There are two entities: the electronic trading exchange, and the individual algorithm. 
+
+The electronic trading exchange takes in client orders, creading bid / ask charts, with market participants.
+
+The algorithm (handlers) will create a limit order book from market data protocols, input the data into a trading algorithm, and then create an order, which is then feeded back into the electronic trading exchange.
+
+### Software overview
+
+Venue (electronic trading exchange) -> gateway in (quotes) -> book builder -> signal / execution -> order manager -> gateway out (orders) -> venue
+
+Within the algorithm (between gateways), there are also command and control / viewers to allow monitoring of performance / positions, and enable oversight. 
+
+Communication between trading system and venues: exchanges specific protocols (electronic communication) to convert messages into internal structures of the system.
+
+#### Design - book building
+
+Book creation sorts by price, by quantity by venues. 
+
+#### Design - Strategy
+
+Signal & execution: determine some signal to execute a trade (ML task)
+
+#### Design - Order manager
+
+Position control, order cycle, and monitor order life cycle
+
+#### Design - Risk / compliance manager
+
+Check exchange rules (maybe exchange doesn't allow HFT.
+
+#### Backtester
+
+Test algorithm on historical data (each data has timestamp)
+
+#### Protocols - Quote
+
+Trading system (initiator) sends logon / subscription to certain instruments
+
+Exchange (acceptor) sends price update streaming (full snapshot or increment refresh) and logon acknowledgement. 
+
+End system with initiator putting in the bye signal (acceptor sends back)
+
+Exchange with tags and contents
+
+Protocols
+- Communication initialization (logon)
+- Communication Acknowledgent (logon ack)
+- request prices for specific symbols (mkt data request)
+- Send prices (full snapshot, incremental update)
+- communication out (logout)
+- communication out back (logout ack)
+
+##### Fix Protocol
+
+Designed for RT exchange. 
+
+Two messages: Application / Administrative
+
+Tag
+- FIX predefined tags.
+- each tag represents spec field
+- each tag given predefined number
+- FIX field dictionary provides list of Fields and corresponding tag numbers (supplied with Spec)
+- Dictionary available at the end of specification (by number and tag name)
+
+Value
+- values represent value of tag assigned to
+- Supported data types: int, float, char, time, date, data, str
+
+messages start with "8=FIX.x.y"
+- indicates FIX version of msg transmitted
+
+Messages terminate with "10=nnn<SOH>"
+- nnn -> checksum of data
+- checksum is sum of all binary values in the message
+- helps identify transmission problems
+
+Body length for FIX protocol format:
+- character count starting at tag 35 (incl) to tag 10 (excl)
+
+Checksum
+- algo of FIX consists of summing up decimal value of ASCII repr all the bytes up to (not including) checksum field: returns value mod 256.
+
+#### Protocols - Order
+
+logon / logon ack
+
+initiator sends new order: acceptor sends back order ack or rejected, then order fill. 
+
+Initiator then can send amend order or cancel order: acceptor sends back amend / cancel
+
+then bye
+
+### Exchanges 
+
+#### Matching engine
+
+algo that accepts order and order book. Returns a list of trades, and remaining orders (becomes next order book)
+
+Different strategies: best price matches an order with an existing order on the book at the best price (at or below/above, depending on order type)
+
+Aggressor order -> removes liquidity from the market. 
+
+If order cannot be fulfilled: remaining lots become a resting order, included in the order book (same result if there is no match)
+
+IF more than one counter order matches current order, two algorithms to rectify this choice
+
+FIFO
+- time / price priority: problematic, reduces retail incentive to trade as lower latency trades / larger trades always prioritized.
+
+Pure pro rata
+- Filled with an algo considering pricing, orde rlot size, and time. Mkt order shared evenly among matching counter orders proportional to magnitude.
+
+Modified pro rata
+- what is frequently used.
+- Used alongside other allocation algorithms, incentivize particular behaviors among market participants
+- Example: oldest counter order completed in full, then pro rata distribution of other counter orders.
+
+## Algorithmic trading method
+
+**You need to be informed to beat the market**
+
+1. Find idea (econ, news, research papers, movies)
+2. What data do you need (fundamental data, technical data)
+3. Collect / clean / normalize / enrich data
+4. Find model (time series, technical indicator, signal, news, microstructrue, comments on forum/website/apps: anything correlated with a price movement, consider assumptions you are making)
+5. Implement model
+6. backtest model with a significant amount of historical data (get metrics to compare model performance: PNL, max loss, number of trades, decay, sharpe)
+
+optional: reimplement in another language
+
+Do not use data you cannot have when you make a decision to trade. 
+
+7. Paper trading (transform strategy to make it work in real time, run strat on trading system, check performance metrics)
+8. Run in production with a low size: loop analyze -> increase trading quantity
+9. Post trade analysis
+10. Victory or keep improving.
+
+If TTO (tick to order) too slow: speed up.
+
+If economic assumptions wrong: rethink signal.
+
+Improve model with newer data and assumptions (tech evolutions, new leadership = new rules, new markets, new challenges/exchanges/models/research)
+
+## Algorithmic trading ecosystem
+
+- cash
+- holdings
+- total (cash + holdings)
+- PNL (total t = current time, - total t = initial time)
+
+## Simple technical indicators:
+
+SMA
+- moving average of price.
+
+EMA
+- Exponential moving average: more weight on more recent price observations, less weight on older ones.
+- Smoothing constant, 2/(n+1). 
